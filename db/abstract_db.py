@@ -31,40 +31,52 @@ class abstract_db(ABC):
             self.__cursor = self.__db.cursor()
             # self.__cursor.execute("SET lc_time_names = 'ru_RU'")
 
-    # query - sql query
-    # params - must be a tuple
-    # return dictionary where key = query(str), value = params(tuple)
+    def __del__(self):
+        self.__db.close()
 
-    def create_query_dict(self, query, params):
+    def query(self, query, params=None):
         if params:
-            args = []
             for item in params:
                 if not item:
                     item = 'NULL'
-                args.append(item)
-            args = tuple(args)
-            query_dict = {f'{query}': args}
-        return query_dict
+        try:
+            self.__cursor.execute(query, params)
+        except sqlite3.DatabaseError as err:
+            self.logger.error(err)
+            return False
+        else:
+            self.__db.commit()
+        if self.__cursor.lastrowid == 0:
+            return True
+        return self.__cursor.lastrowid
 
-    def query_execute(self, query_dict):
-        if query_dict:
-            sql = ''
-            args = ()
-            for item in query_dict:
-                sql += f' {item}'
-                args += query_dict[item]
-            self.logger.info(sql)
-            self.logger.info(args)
-            # return self.__cursor.execute(sql, args)
+    def select(self, select):
+        result_set = self.__cursor.execute(
+            select.get_sql(), select.get_params())
+        if not result_set:
+            return False
+        return result_set
+
+    def select_row(self, select):
+        result_set = self.select(select).fetchone()
+        if not result_set:
+            return False
+        return result_set
+
+    def select_col(self, select):
+        result_set = self.select(select).fetchall()
+        if not result_set:
+            return False
+        return result_set
+
+    def select_cell(self, select):
+        result_set = self.select(select).fetchone()
+        if not result_set:
+            return False
+        return result_set[0]
 
     def get_table_name(self, table_name):
         return self.__prefix + table_name
-
-    def select(self, select):
-        result_set = self.result_set()
-
-    def result_set(self, zero=True, one=True):
-        result_set = self.__cursor.execute()
 
 
 class test_db(abstract_db):
@@ -72,19 +84,10 @@ class test_db(abstract_db):
 
 
 if __name__ == '__main__':
-    logging.config.dictConfig(log_config.LOGGING)
-    logger = logging.getLogger(__name__)
-
-    db = test_db('test.db', 'test')
-
-    qselect = 'SELECT ? ? ?'
-    qfrom = 'FROM ?'
-    params1 = ('one', 'two', None)
-    params2 = (None,)
-    query_dict1 = db.create_query_dict(qselect, params1)
-    logger.info(query_dict1)
-    query_dict2 = db.create_query_dict(qfrom, params2)
-    logger.info(query_dict2)
-    query_dict = {**query_dict1, **query_dict2}
-    logger.info(query_dict)
-    db.query_execute(query_dict)
+    db = test_db(db_path='PassManager.db', db_prefix='pass_')
+    select = select.select(db)
+    # params = ('source',)
+    params = '*'
+    select.sfrom('passwords', params)
+    select.where('Login=?', ['Килобайт'])
+    print(db.select_cell(select))
