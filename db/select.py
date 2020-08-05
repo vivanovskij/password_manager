@@ -70,6 +70,12 @@ class select():
             self.add_where(where, values, and_)
         return self
 
+    def get_where(self):
+        return self.__where
+
+    def get_where_params(self):
+        return self.__where_list
+
     def order(self, field, desc=True):
         if isinstance(field, (list, tuple)):
             self.__order = 'ORDER BY '

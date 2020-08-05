@@ -100,6 +100,32 @@ class abstract_db(ABC):
         self.logger.debug(f'insert: {query}')
         return self.query(query, params)
 
+    def update(self, table_name, row, where=False):
+        if len(row) == 0:
+            return False
+        table_name = self.get_table_name(table_name)
+        query = f'UPDATE `{table_name}` SET '
+        params = []
+        for item in row:
+            query += f'`{item}` = ?,'
+            params.append(row[item])
+        query = query[:-1]
+        if where:
+            params.extend(where.get_where_params())
+            query += f' {where.get_where()}'
+        self.logger.debug(f'update: {query}')
+        return self.query(query, params)
+
+    def delete(self, table_name, where=False):
+        table_name = self.get_table_name(table_name)
+        query = f'DELETE FROM `{table_name}`'
+        params = None
+        if where:
+            query += f' {where.get_where()}'
+            params = where.get_where_params()
+        self.logger.debug(f'delete: {query}')
+        self.query(query, params)
+
     def get_table_name(self, table_name):
         return self.__prefix + table_name
 
@@ -114,12 +140,12 @@ if __name__ == '__main__':
     # params = ('source',)
     # params = '*'
     # select.sfrom('passwords', params)
-    # select.where('Login=?', ['Килобайт'])
     # params = ('id', 'login', 'password')
     # select.sfrom('passwords', params)
     # select.order('id', False)
     # select.limit(4)
     # print(db.select(select))
 
-    params = {'login': 'Килобайт', 'password': 'qwerty', 'source': 'test'}
-    db.insert('passwords', params)
+    select.where('Login=?', ['Test'])
+    params = {'note': 'This is something', 'user_id': '1234'}
+    print(db.insert('passwords', params))
