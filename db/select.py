@@ -23,6 +23,7 @@ class select():
             select = f'SELECT {self.__from} {self.__where} {self.__order} {self.__limit}'
         else:
             select = None
+        self.logger.debug(f'get_sql: {select}')
         return select
 
     def get_params(self):
@@ -67,16 +68,35 @@ class select():
     def where(self, where, values=[], and_=True):
         if where:
             self.add_where(where, values, and_)
+        return self
 
-    def order(self, field, ask=True):
-        pass
+    def order(self, field, desc=True):
+        if isinstance(field, (list, tuple)):
+            self.__order = 'ORDER BY '
+            if not isinstance(desc, (list, tuple)):
+                desc = [item for item in field]
+                self.logger.debug(f'order: {desc}')
+            for index, item in enumerate(field):
+                self.__order += f'`{item}`'
+                if not desc[index]:
+                    self.__order += 'DESC,'
+                else:
+                    self.__order += ','
+            self.__order[:-1]
+        else:
+            self.__order = f'ORDER BY `{field}`'
+            if not desc:
+                self.__order += ' DESC'
+        self.logger.debug(self.__order)
+        return self
 
     def limit(self, count, offset=0):
         count = int(count)
         offset = int(offset)
         if count < 0 or offset < 0:
             return False
-        limit = f'LIMIT {offset}, {count}'
+        self.__limit = f'LIMIT {offset}, {count}'
+        self.logger.debug(self.get_sql())
         return self
 
 
@@ -86,4 +106,5 @@ if __name__ == '__main__':
     params = ('source', 'user')
     select.sfrom('passwords', params)
     select.where('ID=?', [41])
-    db.get_result_set(select)
+    select.order('id')
+    select.limit(2)

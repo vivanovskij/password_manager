@@ -50,30 +50,55 @@ class abstract_db(ABC):
             return True
         return self.__cursor.lastrowid
 
-    def select(self, select):
+    def get_result_set(self, select):
         result_set = self.__cursor.execute(
             select.get_sql(), select.get_params())
         if not result_set:
             return False
         return result_set
 
+    def select(self, select):
+        result_set = self.get_result_set(select).fetchall()
+        if not result_set:
+            return False
+        return result_set
+
     def select_row(self, select):
-        result_set = self.select(select).fetchone()
+        result_set = self.get_result_set(select).fetchone()
         if not result_set:
             return False
         return result_set
 
     def select_col(self, select):
-        result_set = self.select(select).fetchall()
+        result_set = self.get_result_set(select).fetchall()
         if not result_set:
             return False
         return result_set
 
     def select_cell(self, select):
-        result_set = self.select(select).fetchone()
+        result_set = self.get_result_set(select).fetchone()
         if not result_set:
             return False
         return result_set[0]
+
+    def insert(self, table_name, row):
+        if len(row) == 0:
+            return False
+        table_name = self.get_table_name(table_name)
+        fields = '('
+        values = 'VALUES ('
+        params = []
+        for key in row:
+            fields += f'`{key}`,'
+            values += '?,'
+            params.append(row[key])
+        fields = fields[:-1]
+        values = values[:-1]
+        fields += ')'
+        values += ')'
+        query = f'INSERT INTO `{table_name}` {fields} {values}'
+        self.logger.debug(f'insert: {query}')
+        return self.query(query, params)
 
     def get_table_name(self, table_name):
         return self.__prefix + table_name
@@ -87,7 +112,14 @@ if __name__ == '__main__':
     db = test_db(db_path='PassManager.db', db_prefix='pass_')
     select = select.select(db)
     # params = ('source',)
-    params = '*'
-    select.sfrom('passwords', params)
-    select.where('Login=?', ['Килобайт'])
-    print(db.select_cell(select))
+    # params = '*'
+    # select.sfrom('passwords', params)
+    # select.where('Login=?', ['Килобайт'])
+    # params = ('id', 'login', 'password')
+    # select.sfrom('passwords', params)
+    # select.order('id', False)
+    # select.limit(4)
+    # print(db.select(select))
+
+    params = {'login': 'Килобайт', 'password': 'qwerty', 'source': 'test'}
+    db.insert('passwords', params)
