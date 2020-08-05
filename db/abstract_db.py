@@ -8,7 +8,6 @@ import select
 
 
 class abstract_db(ABC):
-    __db = None
     __cursor = None
     __prefix = ''
     logger = None
@@ -27,7 +26,6 @@ class abstract_db(ABC):
         except sqlite3.DatabaseError as err:
             self.logger.error('Error connection to database')
         else:
-            self.logger.info('block Else')
             self.__cursor = self.__db.cursor()
             # self.__cursor.execute("SET lc_time_names = 'ru_RU'")
 
@@ -46,9 +44,9 @@ class abstract_db(ABC):
             return False
         else:
             self.__db.commit()
-        if self.__cursor.lastrowid == 0:
-            return True
-        return self.__cursor.lastrowid
+
+        self.logger.debug(f'query: {self.__cursor.rowcount}')
+        return self.__cursor.rowcount
 
     def get_result_set(self, select):
         result_set = self.__cursor.execute(
@@ -124,7 +122,7 @@ class abstract_db(ABC):
             query += f' {where.get_where()}'
             params = where.get_where_params()
         self.logger.debug(f'delete: {query}')
-        self.query(query, params)
+        return self.query(query, params)
 
     def get_table_name(self, table_name):
         return self.__prefix + table_name
@@ -146,6 +144,7 @@ if __name__ == '__main__':
     # select.limit(4)
     # print(db.select(select))
 
-    select.where('Login=?', ['Test'])
+    select.where('source=?', ['фыв2'])
+    select.sfrom('passwords', '*')
     params = {'note': 'This is something', 'user_id': '1234'}
-    print(db.insert('passwords', params))
+    print(db.select(select))
