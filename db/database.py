@@ -1,4 +1,4 @@
-from abstract_db import *
+from db.abstract_db import *
 from app_lib.config import config
 from select import *
 
