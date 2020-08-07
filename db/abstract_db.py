@@ -1,22 +1,19 @@
 import os
 from abc import ABC, abstractmethod
-from app_lib import log_config
-import logging
-import logging.config
+from app_lib.logger import *
 import sqlite3
 import select
 
+log = logging.getLogger(__name__)
+
 
 class abstract_db(ABC):
+    __db = None
     __cursor = None
     __prefix = ''
-    logger = None
+    _table_columns = None
 
     def __init__(self, db_path='', db_prefix=''):
-        # Create logger
-        logging.config.dictConfig(log_config.LOGGING)
-        self.logger = logging.getLogger(__name__)
-
         # Prefix for database
         self.__prefix = db_prefix
 
@@ -24,10 +21,9 @@ class abstract_db(ABC):
         try:
             self.__db = sqlite3.connect(db_path)
         except sqlite3.DatabaseError as err:
-            self.logger.error('Error connection to database')
+            log.error('Error connection to database')
         else:
             self.__cursor = self.__db.cursor()
-            # self.__cursor.execute("SET lc_time_names = 'ru_RU'")
 
     def __del__(self):
         self.__db.close()
@@ -40,12 +36,12 @@ class abstract_db(ABC):
         try:
             self.__cursor.execute(query, params)
         except sqlite3.DatabaseError as err:
-            self.logger.error(err)
+            log.error(err)
             return False
         else:
             self.__db.commit()
 
-        self.logger.debug(f'query: {self.__cursor.rowcount}')
+        log.debug(f'query: {self.__cursor.rowcount}')
         return self.__cursor.rowcount
 
     def get_result_set(self, select):
@@ -53,28 +49,41 @@ class abstract_db(ABC):
             select.get_sql(), select.get_params())
         if not result_set:
             return False
+        # Список словарей
+        keys = [item[0] for item in result_set.description]
+
+        rows = result_set.fetchall()
+        ret = []
+        for row in rows:
+            row_list = []
+            for index, item in enumerate(row):
+                item_dict = {f'{keys[index]}': f'{item}'}
+                row_list.append(item_dict)
+            ret.append(row_list)
+        log.debug(ret)
         return result_set
 
     def select(self, select):
-        result_set = self.get_result_set(select).fetchall()
+        result_set = self.get_result_set(select)
         if not result_set:
             return False
+        log.debug()
         return result_set
 
     def select_row(self, select):
-        result_set = self.get_result_set(select).fetchone()
+        result_set = self.get_result_set(select)
         if not result_set:
             return False
-        return result_set
+        return result_set[0]
 
     def select_col(self, select):
-        result_set = self.get_result_set(select).fetchall()
+        result_set = self.get_result_set(select)
         if not result_set:
             return False
         return result_set
 
     def select_cell(self, select):
-        result_set = self.get_result_set(select).fetchone()
+        result_set = self.get_result_set(select)
         if not result_set:
             return False
         return result_set[0]
@@ -95,7 +104,7 @@ class abstract_db(ABC):
         fields += ')'
         values += ')'
         query = f'INSERT INTO `{table_name}` {fields} {values}'
-        self.logger.debug(f'insert: {query}')
+        log.debug(f'insert: {query}')
         return self.query(query, params)
 
     def update(self, table_name, row, where=False):
@@ -111,7 +120,7 @@ class abstract_db(ABC):
         if where:
             params.extend(where.get_where_params())
             query += f' {where.get_where()}'
-        self.logger.debug(f'update: {query}')
+        log.debug(f'update: {query}')
         return self.query(query, params)
 
     def delete(self, table_name, where=False):
@@ -121,7 +130,7 @@ class abstract_db(ABC):
         if where:
             query += f' {where.get_where()}'
             params = where.get_where_params()
-        self.logger.debug(f'delete: {query}')
+        log.debug(f'delete: {query}')
         return self.query(query, params)
 
     def get_table_name(self, table_name):
@@ -134,7 +143,7 @@ class test_db(abstract_db):
 
 if __name__ == '__main__':
     db = test_db(db_path='PassManager.db', db_prefix='pass_')
-    select = select.select(db)
+    select = select.select()
     # params = ('source',)
     # params = '*'
     # select.sfrom('passwords', params)
@@ -144,7 +153,7 @@ if __name__ == '__main__':
     # select.limit(4)
     # print(db.select(select))
 
-    select.where('source=?', ['фыв2'])
-    select.sfrom('passwords', '*')
+    # select.where('id=?', ['49'])
+    select.sfrom('users', ('name',))
     params = {'note': 'This is something', 'user_id': '1234'}
-    print(db.select(select))
+    print(db.select_col(select))

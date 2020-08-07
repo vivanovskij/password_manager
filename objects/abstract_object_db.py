@@ -2,11 +2,14 @@ from abc import ABC
 from db.database import *
 from db.abstract_db import *
 from db.select import *
+from app_lib.logger import *
+
+log = logging.getLogger(__name__)
 
 
 class abstract_object_db(ABC):
     db = None
-    table_name = 'abstract'
+    table_name = 'users'
     __properties = {}
     __id = None
 
@@ -53,8 +56,9 @@ class abstract_object_db(ABC):
 
     def build_multiple(self, cls, data):
         ret = {}
+        log.debug(data)
         for row in data:
-            obj = cls.__new__()
+            obj = cls.__new__(cls)
             obj.init(row)
             key = obj.get_id()
             value = obj
@@ -130,7 +134,8 @@ class abstract_object_db(ABC):
         for key, value in self.__properties.items():
             val = row[key]
             self.__properties[key]['value'] = val
-        self.id = row[id]
+        log.debug(row)
+        self.id = row[0]
         return True
 
     def is_saved(self):
@@ -160,5 +165,6 @@ class passwords_dbo(abstract_object_db):
 
 
 if __name__ == '__main__':
+    log.info('Start script')
     dbo = passwords_dbo('passwords')
     dbo.get_all()
