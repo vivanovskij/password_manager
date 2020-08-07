@@ -1,7 +1,8 @@
 import logging
 import logging.config
 from app_lib import log_config
-from abstract_db import *
+from db.abstract_db import *
+from db.database import *
 
 
 class select():
@@ -13,8 +14,8 @@ class select():
     __limit = ''
     logger = None
 
-    def __init__(self, db):
-        self.__db = db
+    def __init__(self):
+        self.__db = database.get_dbo()
         logging.config.dictConfig(log_config.LOGGING)
         self.logger = logging.getLogger(__name__)
 
@@ -108,7 +109,7 @@ class select():
 
 if __name__ == '__main__':
     db = test_db(db_path='PassManager.db', db_prefix='pass_')
-    select = select(db)
+    select = select()
     params = ('source', 'user')
     select.sfrom('passwords', params)
     select.where('ID=?', [41])

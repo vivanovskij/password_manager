@@ -1,19 +1,18 @@
 from abc import ABC
 from db.database import *
 from db.abstract_db import *
-# from database import database
-# from abstract_db import abstract_db
+from db.select import *
 
 
 class abstract_object_db(ABC):
-    _db = None
-    __id = None
+    db = None
+    table_name = 'abstract'
     __properties = {}
-    _table_name = ''
+    __id = None
 
     def __init__(self, table_name):
-        self._table_name = table_name
-        self._db = database.get_dbo()
+        self.db = database.get_dbo()
+        self.table_name = table_name
 
     # ability to get data like: obj.attr
     def __get__(self, name):
@@ -24,6 +23,7 @@ class abstract_object_db(ABC):
         return None
 
     # ability to set data like: obj[attr]=value
+
     def __setitem__(self, name, value):
         if name in self.__properties:
             self.__properties[name]['value'] = value
@@ -31,9 +31,8 @@ class abstract_object_db(ABC):
         else:
             self.__dict__[name] = value
 
-    def add_property(self, field, default=None, validator=None):
-        # self.__properties[field] = {'value': default, 'validator': validator}
-        pass
+    def add_property(self, field, validator=None, default=None):
+        self.__properties[field] = {'value': default, 'validator': validator}
 
     @classmethod
     def add_sub_object(cls, data, class_name, field_out, field_in):
@@ -44,7 +43,7 @@ class abstract_object_db(ABC):
     def get_complex_value(cls, obj, field):
         if '.' in field:
             field = split('.')
-        if isinstance(field, (list, tuple)):
+        if isinstance(field, (list, tuple, dict)):
             value = obj
             for f in field:
                 value = value[f]
@@ -52,8 +51,15 @@ class abstract_object_db(ABC):
             value = obj[field]
         return value
 
-    def build_multiple(self, class_name, data):
-        pass
+    def build_multiple(self, cls, data):
+        ret = {}
+        for row in data:
+            obj = cls.__new__()
+            obj.init(row)
+            key = obj.get_id()
+            value = obj
+            ret.update({key: value})
+        return ret
 
     def compare_relevant(self, value1, value2):
         pass
@@ -61,8 +67,8 @@ class abstract_object_db(ABC):
     def delete(self):
         pass
 
-    def get_all(self):
-        pass
+    def get_all(self, count=False, offset=False):
+        return self.get_all_with_order(self.table_name, self.__class__, 'id', True, count, offset)
 
     def get_all_on_field(self):
         pass
@@ -73,11 +79,22 @@ class abstract_object_db(ABC):
     def get_all_on_ids_field(self, ids, field):
         pass
 
-    def get_all_on_where(self, table_name, where=False, values=False, order=False, ask=True, count=False, offset=False):
-        pass
+    def get_all_on_where(self, table_name, cls, where=False, values=False, order=False, ask=True, count=False, offset=False):
+        sel = select()
+        sel.sfrom(table_name, '*')
+        if where:
+            sel.where(where, values)
+        if order:
+            sel.order(order, ask)
+        else:
+            sel.order('id')
+        if count:
+            sel.limit(count, offset)
+        data = self.db.select(sel)
+        return self.build_multiple(self.__class__, data)
 
-    def get_all_with_order(self, table_name, order, ask=True, count=False, offset=False):
-        pass
+    def get_all_with_order(self, table_name, cls, order, ask=True, count=False, offset=False):
+        return self.get_all_on_where(table_name, cls, False, False, order, ask, count, offset)
 
     def get_base_select(self, table_name):
         pass
@@ -86,7 +103,7 @@ class abstract_object_db(ABC):
         pass
 
     def get_id(self):
-        pass
+        return int(self.__id)
 
     def get_count(self):
         pass
@@ -110,7 +127,11 @@ class abstract_object_db(ABC):
         pass
 
     def init(self, row):
-        pass
+        for key, value in self.__properties.items():
+            val = row[key]
+            self.__properties[key]['value'] = val
+        self.id = row[id]
+        return True
 
     def is_saved(self):
         pass
@@ -134,12 +155,10 @@ class abstract_object_db(ABC):
         pass
 
 
-class test_dbo(abstract_object_db):
+class passwords_dbo(abstract_object_db):
     pass
 
 
 if __name__ == '__main__':
-    dbo = test_dbo('')
-    dbo['test'] = 'This is a new attribute'
-    dbo['another'] = 'This is another attribute'
-    print(dbo.test, dbo.another)
+    dbo = passwords_dbo('passwords')
+    dbo.get_all()
