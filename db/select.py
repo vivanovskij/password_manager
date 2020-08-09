@@ -1,5 +1,5 @@
 from app_lib.logger import *
-from db.abstract_db import *
+from db.base_db import *
 from db.database import *
 
 log = logging.getLogger(__name__)
@@ -15,6 +15,9 @@ class select():
 
     def __init__(self):
         self.__db = database.get_dbo()
+
+    def __repr__(self):
+        return f'SELECT {self.__from} {self.__where} {self.__order} {self.__limit}'
 
     def get_sql(self):
         if self.__from:
@@ -63,6 +66,14 @@ class select():
         if where:
             self.add_where(where, values, and_)
         return self
+
+    def where_in(self, field, values, and_=True):
+        where = f'`{field}` IN ('
+        for value in values:
+            where += '?,'
+        where = where[:-1]
+        where += ')'
+        return self.where(where, values, and_)
 
     def get_where(self):
         return self.__where

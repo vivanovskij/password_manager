@@ -1,5 +1,3 @@
-import os
-from abc import ABC, abstractmethod
 from app_lib.logger import *
 import sqlite3
 import select
@@ -7,11 +5,10 @@ import select
 log = logging.getLogger(__name__)
 
 
-class abstract_db(ABC):
+class base_db():
     __db = None
     __cursor = None
     __prefix = ''
-    _table_columns = None
 
     def __init__(self, db_path='', db_prefix=''):
         # Prefix for database
@@ -27,6 +24,9 @@ class abstract_db(ABC):
 
     def __del__(self):
         self.__db.close()
+
+    def get_cursor(self):
+        return self.__cursor
 
     def query(self, query, params=None):
         if params:
@@ -50,43 +50,20 @@ class abstract_db(ABC):
         if not result_set:
             return False
         # Список словарей
-        keys = [item[0] for item in result_set.description]
 
-        rows = result_set.fetchall()
-        ret = []
-        for row in rows:
-            row_list = []
-            for index, item in enumerate(row):
-                item_dict = {f'{keys[index]}': f'{item}'}
-                row_list.append(item_dict)
-            ret.append(row_list)
-        log.debug(ret)
         return result_set
 
     def select(self, select):
         result_set = self.get_result_set(select)
         if not result_set:
             return False
-        log.debug()
-        return result_set
+        return result_set.fetchall()
 
     def select_row(self, select):
         result_set = self.get_result_set(select)
         if not result_set:
             return False
-        return result_set[0]
-
-    def select_col(self, select):
-        result_set = self.get_result_set(select)
-        if not result_set:
-            return False
-        return result_set
-
-    def select_cell(self, select):
-        result_set = self.get_result_set(select)
-        if not result_set:
-            return False
-        return result_set[0]
+        return result_set.fetchone()
 
     def insert(self, table_name, row):
         if len(row) == 0:
@@ -137,7 +114,7 @@ class abstract_db(ABC):
         return self.__prefix + table_name
 
 
-class test_db(abstract_db):
+class test_db(base_db):
     pass
 
 
@@ -154,6 +131,6 @@ if __name__ == '__main__':
     # print(db.select(select))
 
     # select.where('id=?', ['49'])
-    select.sfrom('users', ('name',))
+    select.sfrom('users', ('login',))
     params = {'note': 'This is something', 'user_id': '1234'}
-    print(db.select_col(select))
+    print(db.select_cell(select))

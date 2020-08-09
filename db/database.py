@@ -1,9 +1,9 @@
-from db.abstract_db import *
+from db.base_db import *
 from app_lib.config import config
 from select import *
 
 
-class database(abstract_db):
+class database(base_db):
     __db = None
 
     def __init__(self, db_path=config.DB_PATH, db_prefix=config.DB_PREFIX):
