@@ -3,6 +3,7 @@ from db.base_db import *
 from db.select import *
 from app_lib.logger import *
 from abc import ABC
+from datetime import datetime
 
 log = logging.getLogger(__name__)
 
@@ -10,11 +11,13 @@ log = logging.getLogger(__name__)
 class base_object_db(ABC):
     __db = None
     __table_name = ''
+    __format_date = ''
     __properties = {}
 
     def __init__(self, table_name):
         self.__db = database.get_dbo()
         self.__table_name = table_name
+        self.__format_date = config.FORMAT_DATE
         cursor = self.__db.get_cursor()
         temp = cursor.execute(
             f'SELECT * FROM {self.__table_name}')
@@ -76,7 +79,9 @@ class base_object_db(ABC):
         return sel
 
     def get_date(self, date=False):
-        pass
+        if not date:
+            date = datetime.today()
+        return date.strftime(self.__format_date)
 
     def get_count(self):
         pass
@@ -128,6 +133,6 @@ class passwords_dbo(base_object_db):
 if __name__ == '__main__':
     log.info('Start script')
     dbo = passwords_dbo('users')
-    dbo['name_test'] = 'test'
-    dbo['name_test2'] = 'test2'
-    log.debug(dbo.get_all_on_ids((60, 61, 62, 63)))
+    # dbo['name_test'] = 'test'
+    # dbo['name_test2'] = 'test2'
+    log.debug(dbo.get_date())
