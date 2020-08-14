@@ -28,42 +28,35 @@ class base_db():
     def get_cursor(self):
         return self.__cursor
 
-    def query(self, query, params=None):
-        if params:
-            for item in params:
-                if not item:
-                    item = 'NULL'
+    def __execute(self, query, params):
         try:
-            self.__cursor.execute(query, params)
+            result = self.__cursor.execute(query, params)
         except sqlite3.DatabaseError as err:
             log.error(err)
             return False
-        else:
+        return result
+
+    def query(self, query, params=None):
+        if self.__execute(query, params):
             self.__db.commit()
 
-        log.debug(f'query: {self.__cursor.rowcount}')
-        return self.__cursor.rowcount
-
-    def get_result_set(self, select):
-        result_set = self.__cursor.execute(
-            select.get_sql(), select.get_params())
-        if not result_set:
+    def select_all(self, query, params):
+        result = self.__execute(query, params)
+        if not result:
             return False
-        # Список словарей
+        return result.fetchall()
 
-        return result_set
-
-    def select(self, select):
-        result_set = self.get_result_set(select)
-        if not result_set:
+    def select_row(self, query, params):
+        result = self.__execute(query, params)
+        if not result:
             return False
-        return result_set.fetchall()
+        return result.fetchone()
 
-    def select_row(self, select):
-        result_set = self.get_result_set(select)
-        if not result_set:
+    def select_cell(self, query, params):
+        result = self.__execute(query, params)
+        if not result:
             return False
-        return result_set.fetchone()
+        return result.fetchone()[0]
 
     def insert(self, table_name, row):
         if len(row) == 0:
@@ -84,19 +77,23 @@ class base_db():
         log.debug(f'insert: {query}')
         return self.query(query, params)
 
-    def update(self, table_name, row, where=False):
-        if len(row) == 0:
+    # param fields - dict {'field': 'value'}
+    # param where - dict {'field': 'value'}
+    def update(self, table_name, fields={}, where=False):
+        if len(fields) == 0:
             return False
         table_name = self.get_table_name(table_name)
         query = f'UPDATE `{table_name}` SET '
         params = []
-        for item in row:
-            query += f'`{item}` = ?,'
-            params.append(row[item])
+        for field, value in fields.items():
+            query += f'`{field}` = ?,'
+            params.append(value)
         query = query[:-1]
         if where:
-            params.extend(where.get_where_params())
-            query += f' {where.get_where()}'
+            for field, value in where.items():
+                query += f' WHERE `{field}` = ?'
+                params.append(value)
+                break
         log.debug(f'update: {query}')
         return self.query(query, params)
 
@@ -119,18 +116,4 @@ class test_db(base_db):
 
 
 if __name__ == '__main__':
-    db = test_db(db_path='PassManager.db', db_prefix='pass_')
-    select = select.select()
-    # params = ('source',)
-    # params = '*'
-    # select.sfrom('passwords', params)
-    # params = ('id', 'login', 'password')
-    # select.sfrom('passwords', params)
-    # select.order('id', False)
-    # select.limit(4)
-    # print(db.select(select))
-
-    # select.where('id=?', ['49'])
-    select.sfrom('users', ('login',))
-    params = {'note': 'This is something', 'user_id': '1234'}
-    print(db.select_cell(select))
+    pass

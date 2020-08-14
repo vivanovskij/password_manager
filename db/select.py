@@ -50,6 +50,7 @@ class select():
         self.__from = from_
         return self
 
+    # param where like 'field=?'
     def add_where(self, where, values=[], and_=True):
         # log.info(values)
         if self.__where:
@@ -61,10 +62,13 @@ class select():
         else:
             self.__where = f'WHERE {where}'
         self.__where_list.extend(values)
+        log.debug(self.__where)
 
+    # param where like 'field=?'
     def where(self, where, values=[], and_=True):
         if where:
             self.add_where(where, values, and_)
+
         return self
 
     def where_in(self, field, values, and_=True):
