@@ -26,12 +26,11 @@ class user_db(base_object_db):
         return self._db.update(self._get_table_name(), update, where)
 
     def create_account(self, login, password):
-        # insert check for account exist???
         if self.has_login(login):
             log.warning('Login exist')
             return False
         password = self.hash(password)
-        date = datetime.now()
+        date = datetime.now().strftime(config.FORMAT_DATE)
         row = {'login': login,
                'password': password,
                'create': date}
@@ -58,8 +57,8 @@ class user_db(base_object_db):
 
 if __name__ == '__main__':
     udb = user_db()
-    print(udb.get_password('Алёша'))
-    print(udb.has_login('Алёша'))
+    # print(udb.get_password('Алёша'))
+    # print(udb.has_login('Алёша'))
     # print(udb.set_password('Алёша', 'qwertys'))
     # print(udb.get_password('Алёша'))
-    # print(udb.create_account('Алёша', 'Ура!!!'))
+    print(udb.create_account('Алёша5', 'Ура!!!'))
