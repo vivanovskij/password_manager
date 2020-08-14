@@ -1,6 +1,5 @@
 from app_lib.logger import *
 import sqlite3
-import select
 
 log = logging.getLogger(__name__)
 
@@ -39,36 +38,39 @@ class base_db():
     def query(self, query, params=None):
         if self.__execute(query, params):
             self.__db.commit()
+            return True
+        else:
+            return False
 
     def select_all(self, query, params):
-        result = self.__execute(query, params)
+        result = self.__execute(query, params).fetchall()
         if not result:
             return False
-        return result.fetchall()
+        return result
 
     def select_row(self, query, params):
-        result = self.__execute(query, params)
+        result = self.__execute(query, params).fetchone()
         if not result:
             return False
-        return result.fetchone()
+        return result
 
     def select_cell(self, query, params):
-        result = self.__execute(query, params)
+        result = self.__execute(query, params).fetchone()
         if not result:
             return False
-        return result.fetchone()[0]
+        else:
+            return result[0]
 
     def insert(self, table_name, row):
         if len(row) == 0:
             return False
-        table_name = self.get_table_name(table_name)
         fields = '('
         values = 'VALUES ('
         params = []
-        for key in row:
+        for key, value in row.items():
             fields += f'`{key}`,'
             values += '?,'
-            params.append(row[key])
+            params.append(value)
         fields = fields[:-1]
         values = values[:-1]
         fields += ')'
@@ -82,7 +84,6 @@ class base_db():
     def update(self, table_name, fields={}, where=False):
         if len(fields) == 0:
             return False
-        table_name = self.get_table_name(table_name)
         query = f'UPDATE `{table_name}` SET '
         params = []
         for field, value in fields.items():
@@ -106,9 +107,6 @@ class base_db():
             params = where.get_where_params()
         log.debug(f'delete: {query}')
         return self.query(query, params)
-
-    def get_table_name(self, table_name):
-        return self.__prefix + table_name
 
 
 class test_db(base_db):

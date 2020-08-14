@@ -8,22 +8,34 @@ class user_db(base_object_db):
         super().__init__(self.__table_name)
 
     def has_login(self, login):
-        if self.get_row_on_field('login', login):
+        if self._get_cell_on_field('login', {'login': login}):
             return True
         else:
             return False
 
     def get_password(self, login):
-        sql = f'SELECT `password` FROM `{self._get_table_name()}` WHERE `login` = ?'
-        params = (login,)
-        return self._db.select_cell(sql, params)
+        # вынести в базовый класс???
+        # self._get_cell_on_field()
+
+        return self._get_cell_on_field('password', {'login': login})
 
     def set_password(self, login, password):
+        password = self.hash(password)
+        update = {'password': password}
         where = {'login': login}
-        return self.set_value_on_field('password', password, where)
+        return self._db.update(self._get_table_name(), update, where)
 
     def create_account(self, login, password):
-        pass
+        # insert check for account exist???
+        if self.has_login(login):
+            log.warning('Login exist')
+            return False
+        password = self.hash(password)
+        date = datetime.now()
+        row = {'login': login,
+               'password': password,
+               'create': date}
+        return self._db.insert(self._get_table_name(), row)
 
     def auth_user(self, login, password):
         pass
@@ -46,4 +58,8 @@ class user_db(base_object_db):
 
 if __name__ == '__main__':
     udb = user_db()
-    print(udb.get_password('user1'))
+    print(udb.get_password('Алёша'))
+    print(udb.has_login('Алёша'))
+    # print(udb.set_password('Алёша', 'qwertys'))
+    # print(udb.get_password('Алёша'))
+    # print(udb.create_account('Алёша', 'Ура!!!'))
