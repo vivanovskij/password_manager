@@ -3,6 +3,7 @@ from base_object_db import *
 
 class user_db(base_object_db):
     __table_name = 'users'
+    __user_id = None
 
     def __init__(self):
         super().__init__(self.__table_name)
@@ -14,9 +15,6 @@ class user_db(base_object_db):
             return False
 
     def get_password(self, login):
-        # вынести в базовый класс???
-        # self._get_cell_on_field()
-
         return self._get_cell_on_field('password', {'login': login})
 
     def set_password(self, login, password):
@@ -25,40 +23,67 @@ class user_db(base_object_db):
         where = {'login': login}
         return self._db.update(self._get_table_name(), update, where)
 
+    def _check_password(self, login, password):
+        return self.get_password(login) == self.hash(password)
+
     def create_account(self, login, password):
         if self.has_login(login):
             log.warning('Login exist')
             return False
         password = self.hash(password)
-        date = datetime.now().strftime(config.FORMAT_DATE)
+        date = self._get_date()
         row = {'login': login,
                'password': password,
                'create': date}
-        return self._db.insert(self._get_table_name(), row)
+        try:
+            self._insert_row(row)
+        except:
+            return False
+        else:
+            return True
 
     def auth_user(self, login, password):
-        pass
+        if self.has_login(login) and self._check_password(login, password):
+            self.__user_id = self._get_cell_on_field('id', {'login': login})
+            return True
+        else:
+            return False
 
     def is_auth(self):
-        pass
+        if self.__user_id:
+            return True
+        else:
+            return False
+
+    def get_user_id(self):
+        if self.is_auth():
+            return self.__user_id
+        else:
+            return None
 
     def logout(self):
-        pass
+        if self.is_auth():
+            self.__user_id = None
 
     def delete_account(self, login):
-        pass
-
-    def get_user_id(self, name):
-        pass
+        self.logout()
+        try:
+            self._delete_row({'login': login})
+        except:
+            return False
+        else:
+            return True
 
     def get_users(self):
-        pass
+        try:
+            result = self._get_column('login')
+        except:
+            return False
+        else:
+            return result
 
 
 if __name__ == '__main__':
     udb = user_db()
-    # print(udb.get_password('Алёша'))
-    # print(udb.has_login('Алёша'))
-    # print(udb.set_password('Алёша', 'qwertys'))
-    # print(udb.get_password('Алёша'))
-    print(udb.create_account('Алёша5', 'Ура!!!'))
+    # udb.create_account('Алёша6', 'Ура!!!')
+    print(udb.get_users())

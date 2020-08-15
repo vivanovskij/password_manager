@@ -22,18 +22,34 @@ class base_object_db(ABC):
     def _get_table_name(self):
         return config.DB_PREFIX + self.__table_name
 
+    def _get_column(self, col_name):
+        query = f'SELECT `{col_name}` FROM `{self._get_table_name()}`'
+        result = self._db.select_all(query)
+        result = [item[0] for item in result]
+        return result
+
     def _get_cell_on_field(self, cell, field={}):
         for k, v in field.items():
             field_name = k
             field_value = v
-        sql = f'SELECT `{cell}` FROM `{self._get_table_name()}` WHERE `{field_name}`=?'
+        query = f'SELECT `{cell}` FROM `{self._get_table_name()}` WHERE `{field_name}`=?'
         params = (field_value,)
-        return self._db.select_cell(sql, params)
+        return self._db.select_cell(query, params)
 
-    def get_date(self, date=False):
+    def _get_date(self, date=False):
         if not date:
             date = datetime.today()
         return date.strftime(self.__format_date)
+
+    def _delete_row(self, field):
+        for k, v in field.items():
+            field_name = k
+            params = (v,)
+        sql = f'DELETE FROM `{self._get_table_name()}` WHERE `{field_name}` = ?'
+        return self._db.query(sql, params)
+
+    def _insert_row(self, row):
+        return self._db.insert(self._get_table_name(), row)
 
     def hash(self, string, secret=config.SALT):
         mystr = string + secret

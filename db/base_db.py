@@ -27,9 +27,14 @@ class base_db():
     def get_cursor(self):
         return self.__cursor
 
-    def __execute(self, query, params):
+    def __execute(self, query, params=None):
         try:
-            result = self.__cursor.execute(query, params)
+            log.debug(query)
+            if params:
+                result = self.__cursor.execute(query, params)
+            else:
+                result = self.__cursor.execute(query)
+
         except sqlite3.DatabaseError as err:
             log.error(err)
             return False
@@ -42,7 +47,8 @@ class base_db():
         else:
             return False
 
-    def select_all(self, query, params):
+    def select_all(self, query, params=None):
+        log.debug('select_all')
         result = self.__execute(query, params).fetchall()
         if not result:
             return False
