@@ -44,7 +44,7 @@ class user_db(base_object_db):
 
     def auth_user(self, login, password):
         if self.has_login(login) and self._check_password(login, password):
-            self.__user_id = self._get_cell_on_field('id', {'login': login})
+            self.__user_id = self.get_user_id(login)
             return True
         else:
             return False
@@ -55,11 +55,8 @@ class user_db(base_object_db):
         else:
             return False
 
-    def get_user_id(self):
-        if self.is_auth():
-            return self.__user_id
-        else:
-            return None
+    def get_user_id(self, login):
+        return self._get_cell_on_field('id', {'login': login})
 
     def logout(self):
         if self.is_auth():
@@ -86,4 +83,5 @@ class user_db(base_object_db):
 if __name__ == '__main__':
     udb = user_db()
     # udb.create_account('Алёша6', 'Ура!!!')
-    print(udb.get_users())
+    # print(udb.get_users())
+    print(udb.auth_user('Алёша6', 'Ура!!!'))
