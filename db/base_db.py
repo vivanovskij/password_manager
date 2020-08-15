@@ -29,7 +29,6 @@ class base_db():
 
     def __execute(self, query, params=None):
         try:
-            log.debug(query)
             if params:
                 result = self.__cursor.execute(query, params)
             else:
@@ -48,7 +47,6 @@ class base_db():
             return False
 
     def select_all(self, query, params=None):
-        log.debug('select_all')
         result = self.__execute(query, params).fetchall()
         if not result:
             return False
