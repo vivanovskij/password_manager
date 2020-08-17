@@ -26,10 +26,9 @@ class base_object_db(ABC):
         for key, value in field.items():
             field_name = key
             field_value = value
-        query = f'SELECT * FROM `{self._get_table_name()}` WHERE `{key}`=`{value}`'
-        log.debug(query)
-        result = self._db.select_all(query)
-        result = [item for item in result]
+        query = f'SELECT * FROM `{self._get_table_name()}` WHERE `{key}` = ?'
+        params = (value,)
+        result = self._db.select_all(query, params)
         return result
 
     def _get_column(self, col_name):
@@ -42,7 +41,7 @@ class base_object_db(ABC):
         for k, v in field.items():
             field_name = k
             field_value = v
-        query = f'SELECT `{cell}` FROM `{self._get_table_name()}` WHERE `{field_name}`=?'
+        query = f'SELECT `{cell}` FROM `{self._get_table_name()}` WHERE `{field_name}` = ?'
         params = (field_value,)
         return self._db.select_cell(query, params)
 
@@ -60,6 +59,9 @@ class base_object_db(ABC):
 
     def _insert_row(self, row):
         return self._db.insert(self._get_table_name(), row)
+
+    def _update_row_on_field(self, row, field):
+        return self._db.update(self._get_table_name(), row, field)
 
     def hash(self, string, secret=config.SALT):
         mystr = string + secret

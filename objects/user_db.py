@@ -63,6 +63,7 @@ class user_db(base_object_db):
             self.__user_id = None
 
     def delete_account(self, login):
+        #??? here it is necessary delete registrations for user
         self.logout()
         try:
             self._delete_row({'login': login})

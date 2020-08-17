@@ -18,12 +18,47 @@ class password_db(base_object_db):
         else:
             return False
 
-    def get_passwords(self):
-        user_id = {'user_id': self.__user.get_user_id()}
-        return self._get_all_on_field(user_id)
+    def get_registrations(self):
+        user_id = {'user_id': int(self.__user.get_user_id())}
+        try:
+            result = self._get_all_on_field(user_id)
+        except Exception as err:
+            log.error(err)
+            return False
+        return result
+
+    def new_source(self, source, login, password, note):
+        #??? вставить проверку на существование ресурса
+        row = {
+            'source': source,
+            'login': login,
+            'password': self.hash(password),
+            'note': note,
+            'user_id': self.__user.get_user_id(),
+            'create_date': self._get_date()
+        }
+        return self._insert_row(row)
+
+    def update_source(self, source, login, password, note):
+        #??? вставить проверку на существование ресурса
+        row = {
+            'login': login,
+            'password': self.hash(password),
+            'note': note,
+            'create_date': self._get_date()
+        }
+        return self._update_row_on_field(row, {'source': source})
+
+    def delete_source(self, source):
+        return self._delete_row({'source': source})
 
 
 if __name__ == '__main__':
     pdb = password_db()
     print(pdb.set_user('Алёша6', 'Ура!!!'))
-    print(pdb.get_passwords())
+    pdb.new_source('One', 'Two', 'Three', 'Four')
+    print(pdb.get_registrations())
+    # pdb.delete_source('One')
+    # print(pdb.get_registrations())
+    pdb.update_source('One', 'Два', 'Три', 'Четыре')
+    print(pdb. get_registrations())
