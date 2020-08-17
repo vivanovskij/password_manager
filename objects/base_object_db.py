@@ -22,6 +22,16 @@ class base_object_db(ABC):
     def _get_table_name(self):
         return config.DB_PREFIX + self.__table_name
 
+    def _get_all_on_field(self, field):
+        for key, value in field.items():
+            field_name = key
+            field_value = value
+        query = f'SELECT * FROM `{self._get_table_name()}` WHERE `{key}`=`{value}`'
+        log.debug(query)
+        result = self._db.select_all(query)
+        result = [item for item in result]
+        return result
+
     def _get_column(self, col_name):
         query = f'SELECT `{col_name}` FROM `{self._get_table_name()}`'
         result = self._db.select_all(query)
